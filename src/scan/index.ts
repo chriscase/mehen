@@ -73,13 +73,17 @@ export async function runScans(opts: RunScansOptions): Promise<RunScansResult> {
 
     let client: Client | null = null;
     try {
-      // Local connection. Trusts pg_hba peer auth on the same host;
-      // pgUser falls back to the OS user (typically `copilot`).
+      // Connect via Unix socket so pg_hba peer auth works (the OS user
+      // must match the postgres role specified). Setting `host` to a
+      // path makes node-postgres use the socket rather than TCP. With
+      // pgUseSudo we expect the cron to invoke `mehen scan` itself,
+      // not via sudo — so pgUser should be the actual OS user (e.g.
+      // copilot). For sudo-postgres scenarios, pre-flight scan via
+      // `sudo -u postgres mehen scan` instead.
       client = new Client({
-        host: 'localhost',
+        host: '/var/run/postgresql',
         database,
         user: config.pgUser,
-        // No password — peer auth on the local socket.
       });
       await client.connect();
     } catch (err) {

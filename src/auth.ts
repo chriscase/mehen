@@ -22,7 +22,9 @@ export function signRequest(
   body: string,
   now: Date = new Date(),
 ): SignedHeaders {
-  const timestamp = now.toISOString();
+  // Server parses with `parseInt(ts, 10)` and treats as epoch milliseconds,
+  // so the wire format is integer ms not ISO. Keep both sides in sync.
+  const timestamp = String(now.getTime());
   const nonce = randomBytes(16).toString('hex');
   const payload = `${timestamp}\n${nonce}\n${body}`;
   const signature = createHmac('sha256', keyHash).update(payload).digest('hex');

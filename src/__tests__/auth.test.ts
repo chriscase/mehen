@@ -7,7 +7,8 @@ describe('signRequest', () => {
     const headers = signRequest('agk_test', 'a'.repeat(64), '{"hello":"world"}');
     expect(headers['X-Agent-Key-Id']).toBe('agk_test');
     expect(headers['X-Agent-Signature']).toMatch(/^[0-9a-f]{64}$/);
-    expect(headers['X-Agent-Timestamp']).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    // Timestamp is integer epoch ms, not ISO — DE server parses with parseInt.
+    expect(headers['X-Agent-Timestamp']).toMatch(/^\d{13}$/);
     expect(headers['X-Agent-Nonce']).toMatch(/^[0-9a-f]{32}$/);
   });
 
@@ -20,7 +21,7 @@ describe('signRequest', () => {
     const payload = `${headers['X-Agent-Timestamp']}\n${headers['X-Agent-Nonce']}\n${body}`;
     const expected = createHmac('sha256', keyHash).update(payload).digest('hex');
     expect(headers['X-Agent-Signature']).toBe(expected);
-    expect(headers['X-Agent-Timestamp']).toBe('2026-05-10T12:00:00.000Z');
+    expect(headers['X-Agent-Timestamp']).toBe(String(fixed.getTime()));
   });
 
   it('produces a different nonce on each call (anti-replay)', () => {

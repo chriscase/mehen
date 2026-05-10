@@ -1,0 +1,33 @@
+{
+  "name": "@chriscase/mehen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Server-side ops agent for DigitalEmpire — backup orchestration, security scans, health checks",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "mehen": "./bin/mehen.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
+    "start": "node bin/mehen.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/lib-storage": "^3.700.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

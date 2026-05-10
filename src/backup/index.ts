@@ -90,6 +90,7 @@ export async function runBackups(opts: RunBackupsOptions): Promise<RunBackupsRes
         database,
         outputPath,
         pgUser: config.pgUser,
+        useSudo: config.pgUseSudo,
       });
       localPath = dump.outputPath;
       sizeBytes = dump.sizeBytes;

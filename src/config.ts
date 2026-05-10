@@ -27,6 +27,12 @@ const ConfigSchema = z.object({
   backupRetainDays: z.coerce.number().int().positive().default(7),
   /** Postgres role used for pg_dump. Falls back to peer auth via sudo. */
   pgUser: z.string().optional(),
+  /**
+   * When true, run pg_dump via `sudo -u <pgUser> pg_dump`. Use when
+   * the cron OS user differs from the postgres role (e.g. running as
+   * copilot but pg_dump must auth as postgres).
+   */
+  pgUseSudo: z.boolean().default(false),
 
   /** Linode Object Storage settings. Off-site upload is skipped if absent. */
   s3Endpoint: z.string().url().optional(),
@@ -87,6 +93,7 @@ export function loadConfig(opts: LoadOptions = {}): Config {
     backupDir: env.MEHEN_BACKUP_DIR ?? '/srv/apps/backups',
     backupRetainDays: env.MEHEN_BACKUP_RETAIN_DAYS ?? 7,
     pgUser: env.MEHEN_PG_USER || undefined,
+    pgUseSudo: /^(1|true|yes|on)$/i.test(env.MEHEN_PG_USE_SUDO ?? ''),
     s3Endpoint: env.MEHEN_S3_ENDPOINT || undefined,
     s3Region: env.MEHEN_S3_REGION || undefined,
     s3Bucket: env.MEHEN_S3_BUCKET || undefined,

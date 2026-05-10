@@ -9,6 +9,13 @@ export interface PgDumpOptions {
   outputPath: string;
   /** Postgres role for the dump. If omitted, pg_dump runs without -U. */
   pgUser?: string;
+  /**
+   * When true, run via `sudo -u <pgUser> pg_dump`. Useful when the
+   * cron environment runs as one OS user but peer auth requires another
+   * (e.g. running as `copilot` but only `postgres` has pg_read_all_data
+   * grants on the target DBs).
+   */
+  useSudo?: boolean;
 }
 
 export interface PgDumpResult {
@@ -26,11 +33,23 @@ export interface PgDumpResult {
  */
 export async function runPgDump(opts: PgDumpOptions): Promise<PgDumpResult> {
   const startedAt = Date.now();
-  const args: string[] = [];
-  if (opts.pgUser) args.push('-U', opts.pgUser);
-  args.push(opts.database);
 
-  const child = spawn('pg_dump', args, {
+  let command: string;
+  let args: string[];
+  if (opts.useSudo) {
+    if (!opts.pgUser) {
+      throw new Error('useSudo requires pgUser');
+    }
+    command = 'sudo';
+    args = ['-n', '-u', opts.pgUser, 'pg_dump', opts.database];
+  } else {
+    command = 'pg_dump';
+    args = [];
+    if (opts.pgUser) args.push('-U', opts.pgUser);
+    args.push(opts.database);
+  }
+
+  const child = spawn(command, args, {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 

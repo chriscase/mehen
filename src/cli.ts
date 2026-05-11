@@ -3,6 +3,7 @@ import { loadConfig, maskConfig } from './config.js';
 import { runBackups } from './backup/index.js';
 import { runScans, listAvailableModules } from './scan/index.js';
 import { runHealthChecks } from './health/index.js';
+import { runStorageScan } from './storage/index.js';
 import { log } from './util/log.js';
 
 const program = new Command();
@@ -62,6 +63,34 @@ program
     const samples = await runHealthChecks({ config, urls: opts.url });
     const anyDown = samples.some((s) => !s.ok);
     process.exit(anyDown ? 1 : 0);
+  });
+
+program
+  .command('storage-scan')
+  .description('Walk the configured S3 bucket and report usage to DE')
+  .option('--dry-run', 'Print scan plan + result without POSTing back', false)
+  .action(async (opts: { dryRun: boolean }) => {
+    const config = loadConfig({ path: program.opts().config as string });
+    const result = await runStorageScan({ config, dryRun: opts.dryRun });
+    if (result.scanned) {
+      process.stdout.write(
+        JSON.stringify(
+          {
+            bucket: result.scanned.bucket,
+            totalBytes: result.scanned.totalBytes,
+            objectCount: result.scanned.objectCount,
+            prefixCount: result.scanned.prefixes.length,
+            reported: result.reported,
+            errors: result.errors,
+          },
+          null,
+          2,
+        ) + '\n',
+      );
+    }
+    if (!result.scanned) process.exit(1);
+    if (!opts.dryRun && !result.reported) process.exit(2);
+    process.exit(0);
   });
 
 program

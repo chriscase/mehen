@@ -6,6 +6,7 @@ import { runPgDump } from './pgDump.js';
 import { uploadToS3 } from './s3Upload.js';
 import { postBackupRun, type BackupRunReport } from '../report.js';
 import { pruneOldBackups } from '../util/retention.js';
+import { pruneS3Backups } from '../storage/pruneBucket.js';
 import { log } from '../util/log.js';
 
 export interface RunBackupsOptions {
@@ -22,6 +23,8 @@ export interface RunBackupsResult {
   partialCount: number;
   failedCount: number;
   pruned: string[];
+  /** Off-site (S3) dump keys pruned (or, in dry-run, that would be pruned). */
+  s3Pruned: string[];
 }
 
 function dateStamp(d: Date): { date: string; year: string; month: string; day: string } {
@@ -47,7 +50,7 @@ export async function runBackups(opts: RunBackupsOptions): Promise<RunBackupsRes
 
   if (targetDbs.length === 0) {
     log.warn('No backup databases configured', { config: config.deployHost });
-    return { totalDbs: 0, successCount: 0, partialCount: 0, failedCount: 0, pruned: [] };
+    return { totalDbs: 0, successCount: 0, partialCount: 0, failedCount: 0, pruned: [], s3Pruned: [] };
   }
 
   if (!dryRun) {
@@ -156,12 +159,36 @@ export async function runBackups(opts: RunBackupsOptions): Promise<RunBackupsRes
         retainDays: config.backupRetainDays,
       });
 
+  // Prune off-site dumps too. Without this the shared bucket grows forever
+  // (the dump key is dated, never overwritten), which is what trips the DE
+  // storage-growth alert. Dry-run reports the would-delete set. Best-effort:
+  // a prune failure never fails the backup run.
+  let s3Pruned: string[] = [];
+  if (offsite && config.s3RetainDays > 0) {
+    try {
+      const result = await pruneS3Backups({
+        config,
+        retainDays: config.s3RetainDays,
+        dryRun,
+      });
+      s3Pruned = dryRun ? result.wouldDelete : result.deleted;
+      log.info(dryRun ? '[dry-run] offsite prune plan' : 'offsite prune complete', {
+        scanned: result.scanned,
+        pruned: s3Pruned.length,
+        retainDays: config.s3RetainDays,
+      });
+    } catch (err) {
+      log.warn('offsite prune failed (backups retained)', { error: (err as Error).message });
+    }
+  }
+
   log.info('Mehen backup run complete', {
     totalDbs: targetDbs.length,
     successCount,
     partialCount,
     failedCount,
     pruned: pruned.removed.length,
+    s3Pruned: s3Pruned.length,
   });
 
   return {
@@ -170,5 +197,6 @@ export async function runBackups(opts: RunBackupsOptions): Promise<RunBackupsRes
     partialCount,
     failedCount,
     pruned: pruned.removed,
+    s3Pruned,
   };
 }

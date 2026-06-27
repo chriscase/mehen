@@ -18,6 +18,7 @@ const baseConfig: Config = {
   backupDbs: [],
   backupDir: '/tmp',
   backupRetainDays: 7,
+  s3RetainDays: 30,
   pgUseSudo: false,
   s3Endpoint: 'https://s3.example',
   s3Region: 'us-east-1',

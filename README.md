@@ -38,7 +38,8 @@ To upgrade later, re-run the same command — `install.sh` is idempotent.
 | `MEHEN_DEPLOY_HOST` | yes | Friendly identifier in logs ("isis", "osiris") |
 | `MEHEN_BACKUP_DBS` | yes | Comma-separated database names |
 | `MEHEN_BACKUP_DIR` | no | Default `/srv/apps/backups` |
-| `MEHEN_BACKUP_RETAIN_DAYS` | no | Default 7. Older `.sql.gz` files auto-pruned after each run. |
+| `MEHEN_BACKUP_RETAIN_DAYS` | no | Default 7. Older local `.sql.gz` files auto-pruned after each run. |
+| `MEHEN_S3_RETAIN_DAYS` | no | Default 30. Off-site dumps older than this (under this host's prefix) are pruned after each run. `0` disables S3 pruning. |
 | `MEHEN_PG_USER` | no | Postgres role for `pg_dump`. Falls back to peer auth if unset. |
 | `MEHEN_S3_ENDPOINT` | no | Linode `https://us-iad-10.linodeobjects.com` |
 | `MEHEN_S3_REGION` | no | e.g. `us-iad-1` |

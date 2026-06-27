@@ -25,6 +25,12 @@ const ConfigSchema = z.object({
   backupDir: z.string().default('/srv/apps/backups'),
   /** Days of local backups to retain (older auto-pruned). */
   backupRetainDays: z.coerce.number().int().positive().default(7),
+  /**
+   * Days of OFF-SITE (S3) backups to retain. Independent of the local window
+   * — offsite dumps are usually kept longer. Older dated dump objects under
+   * this host's prefix are pruned after each run. 0 disables S3 pruning.
+   */
+  s3RetainDays: z.coerce.number().int().nonnegative().default(30),
   /** Postgres role used for pg_dump. Falls back to peer auth via sudo. */
   pgUser: z.string().optional(),
   /**
@@ -92,6 +98,7 @@ export function loadConfig(opts: LoadOptions = {}): Config {
     backupDbs: parseList(env.MEHEN_BACKUP_DBS),
     backupDir: env.MEHEN_BACKUP_DIR ?? '/srv/apps/backups',
     backupRetainDays: env.MEHEN_BACKUP_RETAIN_DAYS ?? 7,
+    s3RetainDays: env.MEHEN_S3_RETAIN_DAYS ?? 30,
     pgUser: env.MEHEN_PG_USER || undefined,
     pgUseSudo: /^(1|true|yes|on)$/i.test(env.MEHEN_PG_USE_SUDO ?? ''),
     s3Endpoint: env.MEHEN_S3_ENDPOINT || undefined,

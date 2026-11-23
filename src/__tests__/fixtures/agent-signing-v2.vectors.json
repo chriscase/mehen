@@ -1,0 +1,120 @@
+{
+  "description": "Digital Empire agent protocol v2 test vectors (docs/AGENT_PROTOCOL_V2.md). The key is RFC 8032 section 7.1 TEST 1: public and test-only. Valid cases must verify; negative cases carry a signature from a valid case with one field changed and must NOT verify.",
+  "algorithm": "Ed25519",
+  "privateKeySeedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+  "publicKey": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+  "valid": [
+    {
+      "name": "http-ingest-array",
+      "method": "POST",
+      "path": "/api/agent/ingest",
+      "timestamp": "1700000000000",
+      "nonce": "nonce-0001",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-01\",\"timestamp\":1700000000000}]",
+      "canonical": "DE-AGENT-V2\nPOST\n/api/agent/ingest\n1700000000000\nnonce-0001\n71d63fec592017487d7dac4c4a17b1a0492e1116dede08d2f1e035d9b367a58e",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    },
+    {
+      "name": "http-empty-body",
+      "method": "POST",
+      "path": "/api/agent/health-sample",
+      "timestamp": "1700000000001",
+      "nonce": "nonce-0002",
+      "body": "",
+      "canonical": "DE-AGENT-V2\nPOST\n/api/agent/health-sample\n1700000000001\nnonce-0002\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "31e114332b95f8ff598ec7ebc6282f4b5ea19f0a1b9da66a75515730940d0809801469c7504aed8bd86c8c2bccca69d27f1cb03983e11a704c931470ac49e603"
+    },
+    {
+      "name": "http-non-ascii-body",
+      "method": "POST",
+      "path": "/api/agent/backup-run",
+      "timestamp": "1700000000002",
+      "nonce": "nonce-0003",
+      "body": "{\"entityId\":\"srv-é\",\"note\":\"café ☕ — ok\"}",
+      "canonical": "DE-AGENT-V2\nPOST\n/api/agent/backup-run\n1700000000002\nnonce-0003\n38e1f469b71817f8348ab5b2573b7c2097a6184ca984743d31d8a1c1835c4c7c",
+      "signature": "f12ade41e3cd7b0ad5789cd5bbd1aca9509d995ecf6dfcd3ec93062c35499fb961af256871c1bf392fb13588c652a5388aa3d0c80bb46f6c894a1c121f9f4502"
+    },
+    {
+      "name": "http-trailing-newline",
+      "method": "POST",
+      "path": "/api/obelisk/agent/deployment-run",
+      "timestamp": "1700000000003",
+      "nonce": "nonce-0004",
+      "body": "{\"app\":\"abydonian\",\"status\":\"success\"}\n",
+      "canonical": "DE-AGENT-V2\nPOST\n/api/obelisk/agent/deployment-run\n1700000000003\nnonce-0004\n611154949f52b1ce1a7771db0ee21eba13b75e1cfa3bda84e7c4e2a501f226fc",
+      "signature": "bc22b119ff8203b2aa53ed5834d3d1d67b85480b5597544dd4a8794b4df2b70f25c7d6ca990255dd9953147b3a374fa0b8fd22a70d1ad53e6b81309b6f842302"
+    },
+    {
+      "name": "http-path-with-query",
+      "method": "POST",
+      "path": "/api/obelisk/agent/resource-event?dryRun=1&x=%2F",
+      "timestamp": "1700000000004",
+      "nonce": "nonce-0005",
+      "body": "{\"kind\":\"oom\"}",
+      "canonical": "DE-AGENT-V2\nPOST\n/api/obelisk/agent/resource-event?dryRun=1&x=%2F\n1700000000004\nnonce-0005\n290e321444a04061fe2ce4d07a8d3d51a666b2dada4e453f73e445e178eee312",
+      "signature": "aeaf5a36fdd417b25dbb3f5623160c2e1968c42d5253abe989980acea416265c0a5bce10b31f3ae9918b0391ff2e531cfc89ff32f27be643601fe40d57df480d"
+    },
+    {
+      "name": "ws-frame",
+      "method": "WS",
+      "path": "/agent",
+      "timestamp": "1700000000005",
+      "nonce": "nonce-0006",
+      "body": "[{\"type\":\"auth\",\"entityId\":\"isis-prod\",\"version\":\"0.2.0\"}]",
+      "canonical": "DE-AGENT-V2\nWS\n/agent\n1700000000005\nnonce-0006\n1718c76e6f12bcebc74c612869eb6f77721eb1e6d5cb7cb4a52de4eddf9c39d9",
+      "signature": "bc7cd772f2dd4d05df23b8d2592dba5bb26270d74c8d8cb61eb8b0aa65b98fc1f293d80055986ae188e4fc37711f020ff808b8802c452e4be77a4885e7a17a03"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "http-ingest-array",
+      "of": "http-ingest-array",
+      "method": "PUT",
+      "path": "/api/agent/ingest",
+      "timestamp": "1700000000000",
+      "nonce": "nonce-0001",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-01\",\"timestamp\":1700000000000}]",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    },
+    {
+      "name": "http-ingest-array",
+      "of": "http-ingest-array",
+      "method": "POST",
+      "path": "/api/agent/backup-run",
+      "timestamp": "1700000000000",
+      "nonce": "nonce-0001",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-01\",\"timestamp\":1700000000000}]",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    },
+    {
+      "name": "http-ingest-array",
+      "of": "http-ingest-array",
+      "method": "POST",
+      "path": "/api/agent/ingest",
+      "timestamp": "1700000000000",
+      "nonce": "nonce-0001",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-02\",\"timestamp\":1700000000000}]",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    },
+    {
+      "name": "http-ingest-array",
+      "of": "http-ingest-array",
+      "method": "POST",
+      "path": "/api/agent/ingest",
+      "timestamp": "1700000000999",
+      "nonce": "nonce-0001",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-01\",\"timestamp\":1700000000000}]",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    },
+    {
+      "name": "http-ingest-array",
+      "of": "http-ingest-array",
+      "method": "POST",
+      "path": "/api/agent/ingest",
+      "timestamp": "1700000000000",
+      "nonce": "nonce-9999",
+      "body": "[{\"type\":\"heartbeat\",\"entityId\":\"server-01\",\"timestamp\":1700000000000}]",
+      "signature": "0c53fd23b8867fd53132f58e643df18e6b265e02792369c6c34dc213c9ae215fed5bbd9462fa627e5994833349161d835bf16e1a7671debe3a00cb3ff6ab7a01"
+    }
+  ]
+}

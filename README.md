@@ -32,8 +32,9 @@ To upgrade later, re-run the same command — `install.sh` is idempotent.
 |---|---|---|
 | `MEHEN_BACKEND_URL` | yes | DE control plane base URL, e.g. `https://mehen.abydonian.com` |
 | `MEHEN_AGENT_KEY_ID` | yes | Public agent key id (registered in DE's `AgentToken`) |
-| `MEHEN_AGENT_KEY_HASH` | yes (or `KEY_SECRET`) | SHA-256 hex of the agent's keySecret. Use `KEY_SECRET` for first-run bootstrap; rotate to `KEY_HASH` once you've recorded it. |
-| `MEHEN_AGENT_KEY_SECRET` | (alternative) | Raw secret. Hashed at load time. Prefer `KEY_HASH` for cold storage. |
+| `MEHEN_AGENT_KEY_FILE` | yes, **v2** (or a v1 key below) | Path to this host's Ed25519 private key (PKCS#8 PEM, mode 600). Create it with `mehen keygen --out /etc/mehen/agent.key`, register the printed public key in DE (Settings → Agent tokens), and set `MEHEN_AGENT_KEY_ID` to the new token. DE stores only the public key. See DE's `docs/AGENT_PROTOCOL_V2.md`. |
+| `MEHEN_AGENT_KEY_HASH` | legacy v1 | SHA-256 hex of the agent's keySecret. **v1 is forgeable from a DE database dump**, because the stored hash is the signing key; migrate to `KEY_FILE` and then revoke the v1 token. Ignored when `KEY_FILE` is set. |
+| `MEHEN_AGENT_KEY_SECRET` | legacy v1 (alternative) | Raw secret, hashed at load time. Ignored when `KEY_FILE` is set. |
 | `MEHEN_ENTITY_ID` | yes | DE Entity row id this server is registered as |
 | `MEHEN_DEPLOY_HOST` | yes | Friendly identifier in logs ("isis", "osiris") |
 | `MEHEN_BACKUP_DBS` | yes | Comma-separated database names |

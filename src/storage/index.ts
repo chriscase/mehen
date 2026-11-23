@@ -1,5 +1,5 @@
 import type { Config } from '../config.js';
-import { signRequest } from '../auth.js';
+import { signFor } from '../auth.js';
 import { log } from '../util/log.js';
 import { scanBucket, type BucketScanResult } from './listBucket.js';
 
@@ -98,7 +98,7 @@ async function postStorageSample(config: Config, scan: BucketScanResult): Promis
     sampledAt: new Date().toISOString(),
   };
   const body = JSON.stringify(payload);
-  const headers = signRequest(config.agentKeyId, config.agentKeyHash, body);
+  const headers = signFor(config, url, body);
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },

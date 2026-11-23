@@ -1,3 +1,4 @@
+import { chmodSync, existsSync, writeFileSync } from 'node:fs';
 import { Command } from 'commander';
 import { loadConfig, maskConfig } from './config.js';
 import { runBackups } from './backup/index.js';
@@ -5,6 +6,7 @@ import { runScans, listAvailableModules } from './scan/index.js';
 import { runHealthChecks } from './health/index.js';
 import { runStorageScan } from './storage/index.js';
 import { log } from './util/log.js';
+import { generateKeyPairV2, loadPrivateKey, publicKeyHex } from './authV2.js';
 
 const program = new Command();
 
@@ -99,6 +101,32 @@ program
   .action(() => {
     const config = loadConfig({ path: program.opts().config as string });
     process.stdout.write(JSON.stringify(maskConfig(config), null, 2) + '\n');
+  });
+
+program
+  .command('keygen')
+  .description('Create an Ed25519 key pair for DE agent protocol v2; prints the public key to register in DE')
+  .requiredOption('--out <path>', 'where to write the private key (PKCS#8 PEM, mode 600)')
+  .option('--force', 'overwrite an existing file')
+  .action((opts: { out: string; force?: boolean }) => {
+    if (existsSync(opts.out) && !opts.force) {
+      throw new Error(`${opts.out} already exists (use --force to overwrite)`);
+    }
+    const { privatePem, publicKey } = generateKeyPairV2();
+    writeFileSync(opts.out, privatePem, { mode: 0o600 });
+    chmodSync(opts.out, 0o600);
+    process.stderr.write(`Wrote private key to ${opts.out} (mode 600). Keep it on this host.\n`);
+    process.stderr.write('Register this public key in Digital Empire (Settings -> Agent tokens), then set\n');
+    process.stderr.write('MEHEN_AGENT_KEY_ID to the new token and MEHEN_AGENT_KEY_FILE to this path:\n');
+    process.stdout.write(`${publicKey}\n`);
+  });
+
+program
+  .command('public-key')
+  .description('Print the public key (64 hex chars) for an existing private key file')
+  .requiredOption('--key-file <path>', 'Ed25519 private key (PKCS#8 PEM)')
+  .action((opts: { keyFile: string }) => {
+    process.stdout.write(`${publicKeyHex(loadPrivateKey(opts.keyFile))}\n`);
   });
 
 function collect(value: string, previous: string[]): string[] {

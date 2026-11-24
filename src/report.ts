@@ -1,4 +1,4 @@
-import { signRequest } from './auth.js';
+import { signFor } from './auth.js';
 import { log } from './util/log.js';
 import type { Config } from './config.js';
 
@@ -25,7 +25,7 @@ export async function postBackupRun(
 ): Promise<{ runId: string }> {
   const url = `${config.backendUrl.replace(/\/$/, '')}/api/agent/backup-run`;
   const body = JSON.stringify(report);
-  const headers = signRequest(config.agentKeyId, config.agentKeyHash, body);
+  const headers = signFor(config, url, body);
 
   const res = await fetch(url, {
     method: 'POST',

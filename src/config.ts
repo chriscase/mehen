@@ -7,13 +7,18 @@ import { config as dotenv } from 'dotenv';
  * Mehen agent config. Loaded from `/etc/abydos-ops.env` by default
  * (root-owned, mode 600); the path is overridable for tests.
  */
-const ConfigSchema = z.object({
+const BaseConfigSchema = z.object({
   /** Where to POST run summaries. e.g. https://mehen.abydonian.com */
   backendUrl: z.string().url(),
   /** Public agent key id (matches AgentToken.keyId in DE). */
   agentKeyId: z.string().min(1),
-  /** SHA-256 hash of the agent's keySecret. Used as HMAC key for signing. */
-  agentKeyHash: z.string().length(64, 'Expected 64-hex SHA-256 hash'),
+  /**
+   * v2 (recommended): path to this host's Ed25519 private key (PKCS#8 PEM,
+   * mode 600). DE stores only the public key. Create with `mehen keygen`.
+   */
+  agentKeyFile: z.string().min(1).optional(),
+  /** v1 (legacy): SHA-256 hash of the agent's keySecret, used as HMAC key. */
+  agentKeyHash: z.string().length(64, 'Expected 64-hex SHA-256 hash').optional(),
   /** Entity row id this server is registered as in DE. */
   entityId: z.string().min(1),
   /** Friendly identifier for logs ("isis", "osiris"). */
@@ -46,6 +51,11 @@ const ConfigSchema = z.object({
   s3Bucket: z.string().optional(),
   s3AccessKey: z.string().optional(),
   s3SecretKey: z.string().optional(),
+});
+
+const ConfigSchema = BaseConfigSchema.refine((c) => Boolean(c.agentKeyFile) !== Boolean(c.agentKeyHash), {
+  message: 'Set exactly one agent credential: MEHEN_AGENT_KEY_FILE (v2) or MEHEN_AGENT_KEY_HASH / MEHEN_AGENT_KEY_SECRET (v1)',
+  path: ['agentKeyFile'],
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -84,14 +94,17 @@ export function loadConfig(opts: LoadOptions = {}): Config {
   // Resolve agent key hash: prefer MEHEN_AGENT_KEY_HASH; fall back to
   // hashing MEHEN_AGENT_KEY_SECRET. Allows server-side rotation tools
   // to issue raw secrets and the agent to record the hash on first run.
-  let agentKeyHash = env.MEHEN_AGENT_KEY_HASH ?? '';
-  if (!agentKeyHash && env.MEHEN_AGENT_KEY_SECRET) {
+  // v2 (MEHEN_AGENT_KEY_FILE) wins; the v1 hash is only derived when no key file is set.
+  const agentKeyFile = env.MEHEN_AGENT_KEY_FILE || undefined;
+  let agentKeyHash: string | undefined = agentKeyFile ? undefined : env.MEHEN_AGENT_KEY_HASH || undefined;
+  if (!agentKeyFile && !agentKeyHash && env.MEHEN_AGENT_KEY_SECRET) {
     agentKeyHash = hashSecret(env.MEHEN_AGENT_KEY_SECRET);
   }
 
   return ConfigSchema.parse({
     backendUrl: env.MEHEN_BACKEND_URL,
     agentKeyId: env.MEHEN_AGENT_KEY_ID,
+    agentKeyFile,
     agentKeyHash,
     entityId: env.MEHEN_ENTITY_ID,
     deployHost: env.MEHEN_DEPLOY_HOST,
@@ -123,7 +136,8 @@ export function isOffsiteEnabled(config: Config): boolean {
 export function maskConfig(config: Config): Record<string, unknown> {
   return {
     ...config,
-    agentKeyHash: config.agentKeyHash ? `${config.agentKeyHash.slice(0, 8)}…` : '',
+    agentKeyHash: config.agentKeyHash ? `${config.agentKeyHash.slice(0, 8)}…` : undefined,
+    signatureVersion: config.agentKeyFile ? 2 : 1,
     s3SecretKey: config.s3SecretKey ? '***' : undefined,
   };
 }

@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 import type { Config } from '../config.js';
-import { signRequest } from '../auth.js';
+import { signFor } from '../auth.js';
 import { log } from '../util/log.js';
 import type { ScanModule, ScanFindingDraft, QueryFn } from './types.js';
 import { userGrowthScan } from './modules/userGrowth.js';
@@ -157,7 +157,7 @@ interface ScanRunPayload {
 async function postScanRun(config: Config, payload: ScanRunPayload): Promise<void> {
   const url = `${config.backendUrl.replace(/\/$/, '')}/api/agent/scan-run`;
   const body = JSON.stringify(payload);
-  const headers = signRequest(config.agentKeyId, config.agentKeyHash, body);
+  const headers = signFor(config, url, body);
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
